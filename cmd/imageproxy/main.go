@@ -50,6 +50,7 @@ var signatureKey = flag.String("signatureKey", "", "HMAC key used in calculating
 var scaleUp = flag.Bool("scaleUp", false, "allow images to scale beyond their original dimensions")
 var timeout = flag.Duration("timeout", 0, "time limit for requests served by this proxy")
 var verbose = flag.Bool("verbose", false, "print verbose logging messages")
+var profile = flag.Bool("profile", false, "enable pprof profiling endpoints")
 var version = flag.Bool("version", false, "Deprecated: this flag does nothing")
 
 func init() {
@@ -89,6 +90,7 @@ func main() {
 	p.Timeout = *timeout
 	p.ScaleUp = *scaleUp
 	p.Verbose = *verbose
+	p.Profile = *profile
 
 	server := &http.Server{
 		Addr:    *addr,

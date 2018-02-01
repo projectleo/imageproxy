@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"net/url"
 	"strings"
 	"time"
@@ -67,6 +68,9 @@ type Proxy struct {
 
 	// If true, log additional debug messages
 	Verbose bool
+
+	// If true, enables pprof profiling
+	Profile bool
 }
 
 // NewProxy constructs a new proxy.  The provided http RoundTripper will be
@@ -119,6 +123,11 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if p.Timeout > 0 {
 		h = tphttp.TimeoutHandler(h, p.Timeout, "Gateway timeout waiting for remote resource.")
 	}
+
+	if p.Profile && strings.HasPrefix(r.URL.Path, "/debug/pprof") {
+		h = p.pprofHandlerFunc(r.URL.Path)
+	}
+
 	h.ServeHTTP(w, r)
 }
 
@@ -209,6 +218,21 @@ func (p *Proxy) allowed(r *Request) error {
 	}
 
 	return fmt.Errorf("request does not contain an allowed host or valid signature: %v", r)
+}
+
+func (p *Proxy) pprofHandlerFunc(path string) http.Handler {
+	switch path {
+	case "/debug/pprof/cmdline":
+		return http.HandlerFunc(pprof.Cmdline)
+	case "/debug/pprof/profile":
+		return http.HandlerFunc(pprof.Profile)
+	case "/debug/pprof/symbol":
+		return http.HandlerFunc(pprof.Symbol)
+	case "/debug/pprof/trace":
+		return http.HandlerFunc(pprof.Trace)
+	}
+
+	return http.HandlerFunc(pprof.Index)
 }
 
 // validHost returns whether the host in u matches one of hosts.
